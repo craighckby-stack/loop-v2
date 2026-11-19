@@ -22,6 +22,7 @@ from pathlib import Path
 
 from loop.etiquette import commit_trailers
 from loop.config.target import TargetConfig
+from loop import COMMIT_USER_EMAIL, COMMIT_USER_NAME
 
 
 class GitError(RuntimeError):
@@ -116,6 +117,12 @@ class GitClient:
         self._scrub_artifacts(wc)
         _git(wc, "add", "-A")
         env = os.environ.copy()
+        # default identity so commits work in CI/containers without a global
+        # git config; a configured user identity always wins
+        env.setdefault("GIT_AUTHOR_NAME", COMMIT_USER_NAME)
+        env.setdefault("GIT_AUTHOR_EMAIL", COMMIT_USER_EMAIL)
+        env.setdefault("GIT_COMMITTER_NAME", COMMIT_USER_NAME)
+        env.setdefault("GIT_COMMITTER_EMAIL", COMMIT_USER_EMAIL)
         trailer_args: list[str] = []
         for t in commit_trailers():
             trailer_args += ["--trailer", t]
@@ -144,8 +151,15 @@ class GitClient:
         Path(out_file).write_text(patch, encoding="utf-8")
         return str(out_file)
 
-    def emit_branch(self, wc: Path, branch: str) -> str:
-        """Leave the working copy on ``branch`` with committed changes."""
+    def emit_branch(self, wc: Path, branch: str, base: str, backup_patch: Path) -> str:
+        """Move the committed changes onto ``branch`` and write a backup patch.
+
+        A branch is only durable as long as its working copy exists, so the
+        caller must keep the working copy for this emission to mean anything;
+        the backup patch is the belt to that braces (same content, portable).
+        """
+        _git(wc, "branch", "-q", branch)
+        self.emit_patch(wc, base, backup_patch)
         return branch
 
     def emit_pr(

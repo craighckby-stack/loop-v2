@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from adapters.base import LanguageAdapter
 from adapters.languages.python_adapter.adapter import PythonAdapter
+from adapters.languages.go_adapter.adapter import GoAdapter
 
 _ADAPTERS: dict[str, type[LanguageAdapter]] = {
     PythonAdapter.name: PythonAdapter,
+    GoAdapter.name: GoAdapter,
 }
 
 

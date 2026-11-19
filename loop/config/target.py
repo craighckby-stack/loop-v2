@@ -107,7 +107,9 @@ class TargetConfig:
                     f"{path}: local provider requires 'local_path' under [target]"
                 )
         if not self.strategies:
-            raise TargetConfigError(f"{path}: at least one strategy must be enabled")
+            # zero strategies is legal: a "health-check" run that only gates
+            # the baseline (consent, tests, provenance) and proposes nothing
+            pass
         if not self.languages:
             raise TargetConfigError(f"{path}: at least one language must be listed")
         if self.emit not in ("patch", "branch", "pr"):

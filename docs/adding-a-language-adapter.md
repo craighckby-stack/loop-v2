@@ -61,9 +61,16 @@ from adapters.languages.mylang.adapter import MyLangAdapter
 
 _ADAPTERS = {
     PythonAdapter.name: PythonAdapter,
+    GoAdapter.name: GoAdapter,
     MyLangAdapter.name: MyLangAdapter,
 }
 ```
+
+Shipping an adapter with **no strategies is legitimate** — that is exactly
+what the Go adapter does today: it contributes file discovery and gate
+detection, registers an empty strategy dict, and Go targets fail closed
+until a Go strategy exists. Discovery + gate first, mutations second, is
+the recommended order for every new language.
 
 ## Strategies for a new language
 

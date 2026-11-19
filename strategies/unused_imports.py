@@ -5,6 +5,8 @@ else in the module — including inside ``__all__``, strings of ``getattr``-styl
 dynamic use are NOT counted (fail-safe: keep the import).
 
 Known-safe exceptions (never removed):
+  * ``__init__.py`` entirely (implicit re-exports are invisible to static
+    analysis; a false positive here breaks downstream imports)
   * ``import`` inside ``try:`` / ``except ImportError:`` (feature detection)
   * ``from __future__ import ...``
   * imports whose names appear in ``__all__``
@@ -101,6 +103,10 @@ def mutate(worktree: Path, rel_files: list[str]) -> MutationResult:
     wt = Path(worktree)
     edits: list[Edit] = []
     for rel in rel_files:
+        # never touch package __init__ files: implicit re-exports there are
+        # legitimate public API, and static analysis cannot tell
+        if Path(rel).name == "__init__.py":
+            continue
         f = wt / rel
         try:
             source = f.read_text(encoding="utf-8")

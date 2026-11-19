@@ -32,7 +32,7 @@ class CycleReport:
     run_id: str
     target_id: str
     upstream: str
-    status: str = "ok"               # ok | refused | no-tests | broken-baseline | nothing-to-do
+    status: str = "ok"               # ok | refused | no-tests | unrunnable | broken-baseline | nothing-to-do
     reason: str = ""
     strategies_run: list[str] = field(default_factory=list)
     strategies_kept: list[str] = field(default_factory=list)
@@ -136,6 +136,16 @@ def run_cycle(
                             verdict="fail", detail=report.reason)
         _cleanup(wc, run_dir, keep_working_copy)
         return report
+    if base_status == "unrunnable":
+        report.status = "unrunnable"
+        report.reason = ("test command detected but could not run (runner missing or timed out); "
+                         "nothing shipped — cannot verify changes")
+        log.mutation_record(run_id=run_id, target_id=cfg.target_id, upstream=report.upstream,
+                            strategy="(baseline)", files=[], gate="test-gate",
+                            verdict="fail", detail=report.reason + " | tail: "
+                                    + (base_run.tail[-200:] if base_run else ""))
+        _cleanup(wc, run_dir, keep_working_copy)
+        return report
     if base_status == "failing":
         report.status = "broken-baseline"
         report.reason = "target's tests already fail before any mutation; refusing to touch it"
@@ -204,19 +214,22 @@ def run_cycle(
     # ---- 6. emit -----------------------------------------------------------
     branch = f"{cfg.branch_prefix}{run_id}"
     base_sha = report.upstream
+    emitted_as_branch = False
     try:
         if cfg.emit == "patch":
             out = run_dir / f"{run_id}.patch"
             report.emitted = git.emit_patch(wc, base_sha, out)
         elif cfg.emit == "branch":
-            git.create_branch(wc, branch)
-            report.emitted = git.emit_branch(wc, branch)
+            backup = run_dir / f"{run_id}.patch"
+            git.emit_branch(wc, branch, base_sha, backup)
+            report.emitted = f"branch:{branch} (working copy kept; patch backup: {backup})"
+            emitted_as_branch = True
         elif cfg.emit == "pr":
             title = f"loop-v2: {', '.join(kept)}"
             body = _pr_body(run_id, cfg, kept, report.files_changed)
             report.emitted = git.emit_pr(wc, branch, title, body)
     except Exception as e:  # noqa: BLE001
-        report.status, report.reason = "ok", f"emission degraded: {e}"
+        report.reason = f"emission degraded: {e}"
         out = run_dir / f"{run_id}.patch"
         try:
             report.emitted = git.emit_patch(wc, base_sha, out)
@@ -226,8 +239,8 @@ def run_cycle(
     report.status = "ok"
     log.append({"kind": "run-end", "run_id": run_id, "target_id": cfg.target_id,
                 "status": report.status, "kept": kept, "emitted": report.emitted})
-    if not keep_working_copy:
-        _cleanup(wc, run_dir, keep_working_copy)
+    # a branch emission only exists while its working copy does: keep it
+    _cleanup(wc, run_dir, keep_working_copy or emitted_as_branch)
     return report
 
 

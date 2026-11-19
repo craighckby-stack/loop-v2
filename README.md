@@ -83,7 +83,7 @@ For GitHub targets, set `provider = "github"` and `repo = "owner/name"` in
 | Etiquette guards | `loop/etiquette/` | consent marker, blocklist, rate limits, stop keyword |
 | Git client | `loop/gitclient/` | clone/branch/commit/patch; fork push + PR via GitHub REST |
 | Provenance | `loop/provenance/` | append-only JSONL run log |
-| Language adapters | `adapters/` | plugin model; `python` built in |
+| Language adapters | `adapters/` | plugin model; `python` (full), `go` (discovery + gate, no strategies yet) |
 | Strategies | `strategies/` | `unused-imports`, `strip-debug`, `modernize-super` |
 | Gate | `gates/` | runs the repo's own test command before/after |
 | CLI | `loop/cli.py` | `init-target`, `check`, `run`, `report`, `stop` |
@@ -99,7 +99,7 @@ Upstream maintainers have three ways, all honoured:
 ## Development
 
 ```bash
-python -m pytest tests/       # 46 tests: unit + integration
+python -m pytest tests/       # 57 tests: unit + integration
 ```
 
 The integration tests run full cycles against `fixtures/sample_repo` —
@@ -108,8 +108,10 @@ consent honoured, baseline gated, patches emitted, fixture never mutated.
 ## Status
 
 Phase 1 of the roadmap in `docs/`: engine + local/GitHub providers + Python
-adapter + three deterministic strategies + repo-CI gate + CLI. Phase 2
-(more language adapters) and phase 3 (GitHub App hosting) are next; see
-`docs/self-hosting.md` for the current deployment model.
+adapter + three deterministic strategies + repo-CI gate + CLI. Phase 2 has
+started: the Go adapter ships with file discovery and `go test` gate
+detection (no mutation strategies yet — Go targets fail closed until one
+exists). Phase 3 (GitHub App hosting) is next; see `docs/self-hosting.md`
+for the current deployment model.
 
 MIT licensed. See `LICENSE`.

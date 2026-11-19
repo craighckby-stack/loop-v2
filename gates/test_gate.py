@@ -74,13 +74,19 @@ def detect_command(cfg: TargetConfig, adapters: list[LanguageAdapter], worktree:
 def baseline(cfg: TargetConfig, adapters, worktree: Path) -> tuple[GateRun | None, str]:
     """Run the pre-mutation baseline. Returns (run, status).
 
-    status is 'no-tests' (gate fails closed), 'failing' (repo already broken,
+    status is 'no-tests' (no test command detected; gate fails closed),
+    'unrunnable' (command detected but the runner is not installed —
+    distinct from the repo being broken), 'failing' (repo already broken,
     cycle aborts) or 'passing'.
     """
     cmd = detect_command(cfg, adapters, worktree)
     if cmd is None:
         return None, "no-tests"
     run = _run(cmd, worktree)
+    if run.returncode is None and not run.timed_out:
+        return run, "unrunnable"
+    if run.timed_out:
+        return run, "unrunnable"
     if run.returncode != 0:
         return run, "failing"
     return run, "passing"

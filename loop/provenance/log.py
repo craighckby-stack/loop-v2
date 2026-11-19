@@ -12,6 +12,8 @@ import time
 import uuid
 from pathlib import Path
 
+from loop import TOOL_NAME, TOOL_VERSION
+
 
 def new_run_id() -> str:
     return f"{time.strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:8]}"
@@ -53,7 +55,7 @@ class ProvenanceLog:
                 "base_branch": base_branch,
                 "strategies": strategies,
                 "started_by": started_by,
-                "tool": "loop-v2/0.1.0",
+                "tool": f"{TOOL_NAME}/{TOOL_VERSION}",
             }
         )
 
