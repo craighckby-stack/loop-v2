@@ -1,0 +1,5 @@
+# loop-v2 consent marker. Delete this file or set consent = false to revoke.
+# This repo opts in to loop-v2 cycles (dogfooding: the tool runs on itself).
+consent = true
+contact = "craighckby-stack@users.noreply.github.com"
+max_prs_per_week = 3
