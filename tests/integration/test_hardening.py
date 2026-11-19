@@ -86,10 +86,10 @@ def test_branch_emission_keeps_working_copy_and_backs_up(tmp_path, fixture_copy)
     assert report.run_id in branches
 
 
-def test_go_target_fails_closed_without_toolchain(tmp_path):
-    """A Go module target with no `go` binary installed must refuse to ship."""
-    import shutil as _sh
-
+def test_go_target_fails_closed_without_strategies(tmp_path):
+    """A Go-module target can never ship anything while the Go adapter
+    registers zero strategies — whether or not a toolchain is installed
+    (GitHub runners ship Go; this sandbox does not — both must hold)."""
     go_repo = tmp_path / "go-repo"
     (go_repo / "pkg").mkdir(parents=True)
     (go_repo / "go.mod").write_text("module example.com/demo\n\ngo 1.21\n")
@@ -108,12 +108,19 @@ def test_go_target_fails_closed_without_toolchain(tmp_path):
     )
     report, _runs = _cycle(tdir, tmp_path)
 
-    # No go toolchain in this sandbox → command detected, runner missing.
-    # Either way nothing ships; assert on both legitimate outcomes.
-    assert report.status in ("unrunnable", "broken-baseline")
+    # the invariant: no Go strategies exist → nothing can be kept or emitted
     assert report.emitted is None
-    if report.status == "unrunnable":
-        assert "cannot verify" in report.reason or "could not run" in report.reason
+    assert report.strategies_kept == []
+    if shutil.which("go") is not None:
+        # toolchain present (GitHub runners ship Go): the fixture module is
+        # valid and its test passes → clean health-check no-op
+        assert report.status == "nothing-to-do", report.summary()
+    else:
+        # no toolchain (this sandbox): command detected but unrunnable
+        # → fail closed either way
+        assert report.status in ("unrunnable", "broken-baseline"), report.summary()
+        if report.status == "unrunnable":
+            assert "cannot verify" in report.reason or "could not run" in report.reason
 
 
 def test_unused_imports_never_touches_init_py(tmp_path, fixture_copy):

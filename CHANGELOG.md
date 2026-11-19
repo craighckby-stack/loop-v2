@@ -18,6 +18,9 @@ All notable changes to loop-v2. Dates are ISO-8601; versions follow semver.
   false positive would break downstream imports.
 - Version strings (provenance `tool` field, trailers, CLI) are derived from
   `loop.__version__` instead of hardcoded literals.
+- **`acquire()` snapshot commits work on bare CI runners** (no global git
+  identity): the local-provider snapshot commit now uses the same identity
+  defaults as every other commit.
 
 ### Added
 - **Go language adapter** (Phase 2 groundwork): `.go` file discovery and

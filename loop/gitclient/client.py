@@ -68,9 +68,17 @@ class GitClient:
             )
             _git(dest, "init", "-q", "-b", self.cfg.base_branch)
             _git(dest, "add", "-A")
-            _git(dest, "commit", "-q", "--allow-empty", "-m", "loop-v2: snapshot of local target")
-        sha = self.head_sha(dest)
-        _ = sha
+            # identity defaults matter here too: bare CI runners have no
+            # global git identity, and this snapshot commit must succeed there
+            proc = subprocess.run(
+                ["git", "-C", str(dest), "commit", "-q", "--allow-empty",
+                 "-m", "loop-v2: snapshot of local target"],
+                capture_output=True, text=True, timeout=60,
+                env=self._commit_env(),
+            )
+            if proc.returncode != 0:
+                raise GitError(f"git commit failed: {proc.stderr.strip()}")
+        _ = self.head_sha(dest)  # sanity: HEAD resolves (snapshot commit exists)
         return dest
 
     # ------------------------------------------------------------- plumbing
@@ -113,16 +121,22 @@ class GitClient:
 
                 shutil.rmtree(d, ignore_errors=True)
 
-    def commit_all(self, wc: Path, message: str) -> None:
-        self._scrub_artifacts(wc)
-        _git(wc, "add", "-A")
+    @staticmethod
+    def _commit_env() -> dict[str, str]:
+        """Environment for commits: default identity so they work in
+        CI/containers without a global git config; a configured user
+        identity always wins."""
         env = os.environ.copy()
-        # default identity so commits work in CI/containers without a global
-        # git config; a configured user identity always wins
         env.setdefault("GIT_AUTHOR_NAME", COMMIT_USER_NAME)
         env.setdefault("GIT_AUTHOR_EMAIL", COMMIT_USER_EMAIL)
         env.setdefault("GIT_COMMITTER_NAME", COMMIT_USER_NAME)
         env.setdefault("GIT_COMMITTER_EMAIL", COMMIT_USER_EMAIL)
+        return env
+
+    def commit_all(self, wc: Path, message: str) -> None:
+        self._scrub_artifacts(wc)
+        _git(wc, "add", "-A")
+        env = self._commit_env()
         trailer_args: list[str] = []
         for t in commit_trailers():
             trailer_args += ["--trailer", t]
