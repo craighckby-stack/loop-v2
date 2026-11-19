@@ -1,0 +1,4 @@
+# loop-v2 consent marker. Delete this file or set consent = false to revoke.
+consent = true
+contact = "maintainer@example.com"
+max_prs_per_week = 3

@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "loop-v2"
+version = "0.1.0"
+description = "A target-agnostic autonomous code-improvement loop: pull a repo, mutate, evaluate with the repo's own tests, emit only winning changes as reviewable PRs."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+authors = [{ name = "loop-v2 contributors" }]
+keywords = ["refactoring", "automation", "code-quality", "mutation"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Quality Assurance",
+]
+
+[project.scripts]
+loop = "loop.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/PLACEHOLDER/loop-v2"
+
+[tool.setuptools.packages.find]
+include = ["loop*", "adapters*", "strategies*", "gates*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,9 @@
+# runs directory is local state, never committed
+.loop-runs/
+runs/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+build/
+dist/
